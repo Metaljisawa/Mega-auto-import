@@ -17,16 +17,17 @@ To use the script, you will need to provide your Mega.nz email and password in t
 ```python
 mega_client = mega.MegaClient()
 mega_client.login('your@email.com', 'yourpassword')
-
+```
 You can then specify the local folder you want to upload and the name of the folder you want to create in Mega.nz:
-
+```python
 local_folder = '/path/to/local/folder'
 folder_name = 'Mega Folder'
-
+```
 Finally, run the script with the python command:
 
+```python
 python script.py
-
+```
 The script will create a folder with the specified name in Mega.nz and upload all the files in the local folder to the Mega.nz folder.
 Note
 
