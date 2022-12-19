@@ -29,6 +29,7 @@ Finally, run the script with the python command:
 python script.py
 ```
 The script will create a folder with the specified name in Mega.nz and upload all the files in the local folder to the Mega.nz folder.
-Note
+
+##Note
 
 The mega.py library provides many other functions that you can use to access and manipulate your Mega.nz account, such as downloading files, deleting files, and moving files between folders. You can find more information about these functions in the library's documentation.
