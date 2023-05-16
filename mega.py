@@ -15,5 +15,4 @@ for root, dirs, files in os.walk(local_folder):
     for file in files:
         # Construct the file's path on your local machine
         local_file_path = os.path.join(root, file)
-        # Upload the file to Mega.nz
-        mega_client.upload(local_file_path, folder['h'])
+       
