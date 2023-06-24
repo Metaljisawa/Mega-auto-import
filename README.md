@@ -1,35 +1,47 @@
-# Mega-auto-import
-Auto-import a folder after any updates from this folder, to upload it in Mega.nz
+# Mega.nz Auto Login and Document Import
 
-# Mega Uploader
-
-This script allows you to automatically upload a folder from your local storage to Mega.nz.
+This script automates the login process to Mega.nz and allows you to import a document into your Mega.nz account.
 
 ## Prerequisites
 
 - Python 3.6 or later
-- The `mega.py` library: `pip install mega.py`
+- The Selenium library: `pip install selenium`
+- A compatible web driver for your browser (e.g., ChromeDriver for Google Chrome)
 
 ## Usage
 
-To use the script, you will need to provide your Mega.nz email and password in the `login` function.
+1. Install the Selenium library:
 
-```python
-mega_client = mega.MegaClient()
-mega_client.login('your@email.com', 'yourpassword')
 ```
-You can then specify the local folder you want to upload and the name of the folder you want to create in Mega.nz:
-```python
-local_folder = '/path/to/local/folder'
-folder_name = 'Mega Folder'
+pip install selenium
 ```
-Finally, run the script with the python command:
 
-```python
-python script.py
+
+2. Download the appropriate web driver for your browser and place it in a directory. You can find the ChromeDriver for Google Chrome [here](https://sites.google.com/a/chromium.org/chromedriver/).
+
+3. Clone or download the code to your local machine.
+
+4. Replace the following placeholders in the code:
+
+- `'path/to/chromedriver'`: Replace this with the actual path to the web driver executable.
+- `'your@email.com'`: Replace this with your Mega.nz login email.
+- `'yourpassword'`: Replace this with your Mega.nz login password.
+- `'/path/to/document.txt'`: Replace this with the actual path to the document you want to import.
+
+5. Save the modified code file.
+
+6. Run the script using the following command:
+
 ```
-The script will create a folder with the specified name in Mega.nz and upload all the files in the local folder to the Mega.nz folder.
+mega.py
+```
+
+
+The script will automate the login process to your Mega.nz account and import the specified document.
+
+7. After the document is imported, the script will print a success message.
 
 ## Note
 
-The mega.py library provides many other functions that you can use to access and manipulate your Mega.nz account, such as downloading files, deleting files, and moving files between folders. You can find more information about these functions in the library's documentation.
+- This script utilizes the Selenium library to automate the web browsing and interaction with the Mega.nz website.
+- Make sure to respect the terms of service and usage policies of Mega.nz while using this script.
