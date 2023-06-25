@@ -3,7 +3,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-
+def login_to_mega(email, password):
+    # Set up the Selenium webdriver (make sure you have the appropriate driver installed)
+    driver = webdriver.Chrome('path/to/chromedriver')  # Use appropriate driver for your browser
 
     # Open the Mega.nz website
     driver.get('https://mega.nz/login')
