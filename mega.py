@@ -26,10 +26,7 @@ def login_to_mega(email, password):
     # Return the driver instance for further use
     return driver
 
-def import_document(driver, file_path):
-    # Find the file input field and send the file path
-    file_input = driver.find_element(By.CSS_SELECTOR, '.fm-file-upload input[type="file"]')
-    file_input.send_keys(file_path)
+
 
     # Wait for the file to finish uploading (you may need to adjust the wait time based on your file size and internet connection)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.fm-tree-panel .tranfer-filetype-txt')))
