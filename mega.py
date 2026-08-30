@@ -1,55 +1,164 @@
+"""
+Script automatization Mega.nz : connexion + document import.
+
+Must have :
+    pip install selenium
+
+Environment variables to be set before execution :
+    MEGA_EMAIL         -> email of the account Mega.nz
+    MEGA_PASSWORD       -> password of Mega.nz
+    MEGA_UPLOAD_FILE    -> (optionnel) path of the file you want to upload
+
+Exemple (Linux/macOS) :
+    export MEGA_EMAIL="your@email.com"
+    export MEGA_PASSWORD="yourpassword"
+    export MEGA_UPLOAD_FILE="/path/to/document.txt"
+    python mega_upload.py
+
+Exemple (PowerShell) :
+    $env:MEGA_EMAIL="your@email.com"
+    $env:MEGA_PASSWORD="yourpassword"
+    $env:MEGA_UPLOAD_FILE="C:\\path\\to\\document.txt"
+    python mega_upload.py
+
+IMPORTANT NOTE :
+    The CSS selectors below (input[name=“login”], .fm-file-upload, etc.)
+    corresponded to the Mega.nz interface in 2022. Mega regularly updates
+    its DOM: if the script fails with a TimeoutException, open your browser’s
+    developer tools at mega.nz/login and check/adjust these
+    selectors before doing anything else.
+"""
+
+import logging
+import os
+import sys
+from contextlib import contextmanager
+from pathlib import Path
+
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
-def login_to_mega(email, password):
-    # Set up the Selenium webdriver (make sure you have the appropriate driver installed)
-    driver = webdriver.Chrome('path/to/chromedriver')  # Use appropriate driver for your browser
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
-    # Open the Mega.nz website
-    driver.get('https://mega.nz/login')
+DEFAULT_TIMEOUT = 20  # secondes
 
-    # Find the email input field, enter your email, and click Next
-    email_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name="login"]')))
+
+def build_driver(headless: bool = True) -> webdriver.Chrome:
+    """Configures and returns a Chrome WebDriver instance.
+
+    Selenium 4+ includes Selenium Manager: it automatically downloads and manages
+    the correct Chrome WebDriver; you no longer need to specify a path manually.
+    """
+    options = Options()
+    if headless:
+        options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    return webdriver.Chrome(options=options)
+
+
+@contextmanager
+def mega_session(headless: bool = True):
+    """A context manager that ensures the driver is closed properly."""
+    driver = build_driver(headless=headless)
+    try:
+        yield driver
+    finally:
+        driver.quit()
+
+
+def login_to_mega(
+    driver: webdriver.Chrome,
+    email: str,
+    password: str,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> None:
+    """Connects to Mega.nz. Throws a TimeoutException if an expected item does not appear."""
+    driver.get("https://mega.nz/login")
+
+    email_input = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[name="login"]'))
+    )
+    email_input.clear()
     email_input.send_keys(email)
-    email_input.submit()
 
-    # Find the password input field, enter your password, and click Login
-    password_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name="password"]')))
+    password_input = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[name="password"]'))
+    )
+    password_input.clear()
     password_input.send_keys(password)
-    password_input.submit()
 
-    # Wait for the login process to complete (you may need to adjust the wait time based on your internet connection)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.fm-file-upload input[type="file"]')))
+    login_button = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button.login-button, #login-button"))
+    )
+    login_button.click()
 
-    # Return the driver instance for further use
-    return driver
+    # We expect something specific to the file system (proof of a successful connection),
+    # not just “an input file exists somewhere on the page.”
+    WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, ".fm-file-upload input[type='file']"))
+    )
+    logger.info("Successfully connected to Mega.nz.")
 
-def import_document(driver, file_path):
-    # Find the file input field and send the file path
-    file_input = driver.find_element(By.CSS_SELECTOR, '.fm-file-upload input[type="file"]')
-    file_input.send_keys(file_path)
 
-    # Wait for the file to finish uploading (you may need to adjust the wait time based on your file size and internet connection)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.fm-tree-panel .tranfer-filetype-txt')))
+def import_document(
+    driver: webdriver.Chrome,
+    file_path: str,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> None:
+    """Imports a document into the connected Mega.nz account."""
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found : {file_path}")
 
-    # Print a success message
-    print('Document uploaded successfully!')
+    file_input = WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, ".fm-file-upload input[type='file']"))
+    )
+    file_input.send_keys(str(path.resolve()))
 
-    # Close the browser window when finished
-    driver.quit()
+    WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, ".fm-tree-panel .tranfer-filetype-txt"))
+    )
+    logger.info("Document '%s' imported sucessfully", path.name)
 
-if __name__ == '__main__':
-    # Set your Mega.nz login credentials
-    email = 'your@email.com'
-    password = 'yourpassword'
 
-    # Set the file path of the document to import
-    file_path = '/path/to/document.txt'
+def main() -> int:
+    email = os.environ.get("MEGA_EMAIL")
+    password = os.environ.get("MEGA_PASSWORD")
+    file_path = os.environ.get("MEGA_UPLOAD_FILE", "/path/to/document.txt")
 
-    # Log in to Mega.nz
-    driver = login_to_mega(email, password)
+    if not email or not password:
+        logger.error(
+            "MEGA_EMAIL and MEGA_PASSWORD must be set as environment variables."
+        )
+        return 1
 
-    # Import the document
-    import_document(driver, file_path)
+    try:
+        with mega_session(headless=True) as driver:
+            login_to_mega(driver, email, password)
+            import_document(driver, file_path)
+    except TimeoutException:
+        logger.error(
+            "Timeout: An expected element did not appear. "
+            "The Mega.nz DOM may have changed since this script was written."
+        )
+        return 1
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        return 1
+    except WebDriverException as e:
+        logger.error("Erreur WebDriver : %s", e)
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
